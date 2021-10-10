@@ -3,7 +3,7 @@ use solana_program::{
     program_error::PrintProgramError, pubkey::Pubkey,
 };
 
-use crate::{error::VestingError, processor::Processor};
+use crate::{error::VerificationError, processor::Processor};
 
 entrypoint!(process_instruction);
 
