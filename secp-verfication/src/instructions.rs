@@ -13,7 +13,7 @@ use solana_program::{
 
 pub enum VerificationInstruction{
     Verify {
-        publicKey: [u8; 64],
+        public_key: [u8; 64],
         hash: [u8; 64],
         signature: [u8; 64],
         recovery_id: u8,
@@ -27,7 +27,7 @@ impl VerificationInstruction {
         Ok(match tag {
             0 => {
 
-                let publicKey: [u8; 64] = rest
+                let public_key: [u8; 64] = rest
                     .get(..64)
                     .and_then(|slice| slice.try_into().ok())
                     .unwrap();
@@ -49,7 +49,7 @@ impl VerificationInstruction {
                     .ok_or(InvalidInstruction)?;
 
                 Self::Verify{
-                    publicKey,
+                    public_key,
                     hash,
                     recovery_id: id,
                     signature

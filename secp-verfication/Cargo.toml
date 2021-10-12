@@ -8,3 +8,4 @@ edition = "2018"
 [dependencies]
 solana-program = "1.5.6"
 thiserror = "1.0.23"
+libsecp256k1 = "0.7.0"
