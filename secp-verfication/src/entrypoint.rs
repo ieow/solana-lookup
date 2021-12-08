@@ -1,9 +1,9 @@
 use solana_program::{
     account_info::AccountInfo, entrypoint, entrypoint::ProgramResult, msg,
-    program_error::PrintProgramError, pubkey::Pubkey,
+    pubkey::Pubkey,
 };
 
-use crate::{error::VerificationError, processor::Processor};
+use crate::{processor::Processor};
 
 entrypoint!(process_instruction);
 

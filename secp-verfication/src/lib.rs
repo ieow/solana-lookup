@@ -4,7 +4,7 @@ pub mod entrypoint;
 pub mod error;
 pub mod processor;
 pub mod instructions; 
-
+pub mod state;
 #[cfg(test)]
 mod tests {
     #[test]
