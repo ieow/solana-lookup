@@ -1,4 +1,4 @@
-import { ASSOCIATED_TOKEN_PROGRAM_ID, Token, TOKEN_PROGRAM_ID } from '@solana/spl-token';
+import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { PublicKey, SYSVAR_RENT_PUBKEY, TransactionInstruction } from '@solana/web3.js';
 import BN = require('bn.js');
 
@@ -38,6 +38,62 @@ export function createInitInstruction(
       isSigner: false,
       isWritable: true,
     },
+  ];
+  console.log(data.length)
+  return new TransactionInstruction({
+    keys,
+    programId: lookupProgramId,
+    data: data, 
+  });
+}
+
+
+export function createRedeemInstruction(
+  lookupProgramId : PublicKey,
+  sourceAccount: PublicKey,
+  mintAccount: PublicKey,
+  destinationAccount: PublicKey,
+  lookupAccountKey: PublicKey,
+  payerKey: PublicKey,
+  payloadData: {
+    hash: Array<Buffer | Uint8Array>,
+    signature: Array<Buffer | Uint8Array>,
+    recovery_id: Array<Buffer | Uint8Array>,
+  }
+): TransactionInstruction {
+  const inst_type = Buffer.from(Uint8Array.of(2));
+  const data = Buffer.concat([inst_type, ...payloadData.hash, ...payloadData.signature, ...payloadData.recovery_id ])
+  const keys = [
+    {
+      pubkey: sourceAccount,
+      isSigner: false,
+      isWritable: true,
+    },
+    {
+      pubkey: mintAccount,
+      isSigner: false,
+      isWritable: false,
+    },
+    {
+      pubkey: destinationAccount,
+      isSigner: false,
+      isWritable: true,
+    },
+    {
+      pubkey: lookupAccountKey,
+      isSigner: false,
+      isWritable: true,
+    },
+    {
+      pubkey: payerKey,
+      isSigner: true,
+      isWritable: true,
+    },
+    {
+        pubkey: TOKEN_PROGRAM_ID,
+        isSigner : false,
+        isWritable: false,
+    }
   ];
   console.log(data.length)
   return new TransactionInstruction({

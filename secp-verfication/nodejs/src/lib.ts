@@ -46,19 +46,15 @@ export const createLookUpAcc = async(connection:Connection, seeds:(Buffer|Uint8A
 }
 
 export const deposit = async (connection: Connection, mintAddress:PublicKey, pda: PublicKey, payer: PublicKey, amount: number) =>{
-    console.log(pda.toBase58())
     const instructions : TransactionInstruction[] = []
     const associatedAddress = await Token.getAssociatedTokenAddress( ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, mintAddress, pda , true);
     const assocAcc = await connection.getParsedAccountInfo(associatedAddress)
     const mintAcc = await connection.getParsedAccountInfo(mintAddress);
     
     const sourceAddress = await Token.getAssociatedTokenAddress( ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, mintAddress, payer )
-    console.log(mintAcc)
     console.log(associatedAddress.toBase58())
     console.log(sourceAddress.toBase58())
     const decimals = (mintAcc.value?.data as ParsedAccountData ).parsed.info.decimals;
-    console.log(decimals)
-    console.log(assocAcc)
     if (assocAcc.value === null) {
         // create associated token address
         const initInstruction = Token.createAssociatedTokenAccountInstruction(ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, mintAddress, associatedAddress, pda,  payer)
