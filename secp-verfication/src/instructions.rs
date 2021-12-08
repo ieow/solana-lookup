@@ -15,12 +15,11 @@ pub enum LookUpInstruction{
         recovery_id: u8,
     },
     Init {
-        public_key: [u8; 65],
+        public_key: [u8; 64],
         // seeds : [[u8;32];3]
     },
     Redeem {
-        public_key: [u8; 64],
-        hash: [u8; 64],
+        hash: [u8; 32],
         signature: [u8; 64],
         recovery_id: u8,
     }
@@ -64,8 +63,8 @@ impl LookUpInstruction {
             }
             1 => {
 
-                let public_key: [u8; 65] = rest
-                    .get(..65)
+                let public_key: [u8; 64] = rest
+                    .get(..64)
                     .and_then(|slice| slice.try_into().ok())
                     .unwrap();
                 Self::Init{
@@ -73,32 +72,31 @@ impl LookUpInstruction {
                 }
             }
             2 => {
-                let public_key: [u8; 64] = rest
-                .get(..64)
-                .and_then(|slice| slice.try_into().ok())
-                .unwrap();
+                // let public_key: [u8; 64] = rest
+                // .get(..64)
+                // .and_then(|slice| slice.try_into().ok())
+                // .unwrap();
 
-                let hash: [u8; 64] = rest
-                    .get(64..128)
+                let hash: [u8; 32] = rest
+                    .get(..32)
                     .and_then(|slice| slice.try_into().ok())
                     .unwrap();
 
                 let signature: [u8; 64] = rest
-                    .get(128..216)
+                    .get(32..96 )
                     .and_then(|slice| slice.try_into().ok())
                     .unwrap();
                 
-                let id = rest
-                    .get(216..217)
+                let recovery_id = rest
+                    .get(96..97)
                     .and_then(|slice| slice.try_into().ok())
                     .map(u8::from_le_bytes)
                     .ok_or(InvalidInstruction)?;
                     
                 Self::Redeem{
-                    public_key,
                     hash,
-                    recovery_id: id,
                     signature,
+                    recovery_id
                 }
             }
             _ => {

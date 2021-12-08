@@ -10,14 +10,6 @@ use solana_program::{
     system_instruction::create_account, sysvar::Sysvar, program_pack::Pack, 
     
 };
-// use libsecp256k1::Signature;
-// use spl_token::instruction::initialize_account;
-// use spl_token::{
-//     state::{
-//         Account as TokenAccount,
-//         Mint as MintAccount
-//     }
-// };
 use spl_token::state::Account as TokenAccount;
 use spl_token::state::Mint as MintAccount;
 
@@ -31,9 +23,7 @@ impl Processor {
         accounts: &[AccountInfo],
         instruction_data: &[u8],
     ) -> ProgramResult {
-        msg!("Beginning processing");
         let instruction = LookUpInstruction::unpack(instruction_data)?;
-        msg!("Instruction unpacked");
         match instruction {
             LookUpInstruction::Verify {
                 hash, recovery_id, signature, public_key
@@ -48,10 +38,10 @@ impl Processor {
                 Self::init_account(program_id, accounts, &public_key)
             }
             LookUpInstruction::Redeem{
-                hash, recovery_id,signature, public_key 
+                hash, recovery_id,signature 
             } => {
                 msg!("Instruction: Redeem");
-                Self::redeem( program_id, accounts, &public_key, &hash, &signature, recovery_id )
+                Self::redeem( program_id, accounts,  &hash, &signature, recovery_id )
             }
         }
     }
@@ -71,8 +61,7 @@ impl Processor {
 
         let s1 = public_key.get(..32).unwrap();
         let s2 = public_key.get(32..64).unwrap();
-        let s3 = public_key.get(64..).unwrap();
-        let mut seed= vec![s1,s2,s3];
+        let mut seed= vec![s1,s2];
         // // Find the non reversible public key for the vesting contract via the seed
         let (lookup_account_key, bump_seed) = Pubkey::try_find_program_address(&seed, &program_id).unwrap();
         if lookup_account_key != *lookup_account.key {
@@ -80,16 +69,12 @@ impl Processor {
             return Err(ProgramError::InvalidArgument);
         }
 
-        // let bump = bump_seed;
-        // seed.push(&[bump_seed]);
         let a_bump_seed = [bump_seed];
-        seed = vec![s1,s2,s3,&a_bump_seed];
+        seed = vec![s1,s2,&a_bump_seed];
         msg!("{:?}", &lookup_account_key);
-        // // let state_size = (schedules as usize) * VestingSchedule::LEN + VestingScheduleHeader::LEN;
 
         let state_size =  VestingScheduleHeader::LEN;
 
-        msg!("creaet_account");
         let init_vesting_account = create_account(
             &payer.key,
             &lookup_account_key,
@@ -97,8 +82,6 @@ impl Processor {
             state_size as u64,
             &program_id,
         );
-        msg!("sign");
-        msg!("{:?}",&seed);
         invoke_signed(
             &init_vesting_account,
             &[
@@ -136,7 +119,6 @@ impl Processor {
     pub fn redeem(
         program_id: &Pubkey,
         accounts: &[AccountInfo],
-        public_key: &[u8],
         hash: &[u8],
         signature: &[u8],
         recovery_id: u8,
@@ -146,13 +128,9 @@ impl Processor {
         let s1 = pubkey_bytes.get(0..32).unwrap();
         let s2 = pubkey_bytes.get(32..64).unwrap();
         
-        let mut seeds = vec![s1,s2];
-        if public_key != pubkey_bytes {
-            msg!("verification failed");
-            return Err(ProgramError::InvalidArgument)
-        }
-
-        msg!("verification done");
+        // let s1 = signature.get(0..32).unwrap();
+        // let s2 = signature.get(32..64).unwrap();
+        let mut seeds = vec![s1,s2 ];
 
         let accounts_iter = &mut accounts.iter();
 
@@ -161,28 +139,31 @@ impl Processor {
         let destination_account = next_account_info(accounts_iter)?;
         let lookup_account = next_account_info(accounts_iter)?;
         let payer_account = next_account_info(accounts_iter)?;
+        let token_program_account = next_account_info(accounts_iter)?;
         
         let source_token = TokenAccount::unpack(&source_account.try_borrow_data()?)?;
         let mint_token= MintAccount::unpack(&mint_account.try_borrow_data()?)?;
         
-        msg!("unpack done");
         // find pda Account from secp256 pubkey to match lookup_account.key
-        // // Find the non reversible public key for the vesting contract via the seed
+        // Find the non reversible public key for the vesting contract via the seed
         let (lookup_account_key, bump_seed) = Pubkey::try_find_program_address(&seeds, &program_id).unwrap();
         if lookup_account_key != *lookup_account.key {
-            msg!("Provided lookup account is invalid");
+            msg!("verification failed");
+            msg!("Provided lookup account is invalid {:?}", &lookup_account_key );
             return Err(ProgramError::InvalidArgument);
         }
         let b_seed = [bump_seed];
         seeds.push(&b_seed);
-        // let (lookupaccount_key, bump_seed) = 
+        
+        msg!("verification done");
         // transfer token to destination
         let transfer = spl_token::instruction::transfer_checked( 
-            &spl_token::ID, 
-            source_account.key, 
-            mint_account.key, 
-            destination_account.key,
-            lookup_account.key, 
+            &token_program_account.key, 
+            // &spl_token::id(),
+            &source_account.key, 
+            &mint_account.key, 
+            &destination_account.key,
+            &lookup_account.key, 
             &[],
             source_token.amount, 
             mint_token.decimals
@@ -194,12 +175,14 @@ impl Processor {
                 destination_account.clone(),
                 mint_account.clone(),
                 lookup_account.clone(),
+                token_program_account.clone(),
             ],
             &[&seeds]
         )?;        
+        
         // close token acc transfer sol to dest 
         let close_account = spl_token::instruction::close_account(
-            &spl_token::ID,
+            &spl_token::id(),
             &source_account.key,
             &payer_account.key, 
             &lookup_account.key, 
@@ -214,7 +197,6 @@ impl Processor {
             ],
             &[&seeds]
         )?;
-        msg!("pubkey {:?}", pubkey.to_bytes());
         Ok(())
     }
 }
