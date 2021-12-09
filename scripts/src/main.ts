@@ -24,7 +24,6 @@ const ec = new EC('secp256k1');
 async function main() {
   const connection = new Connection(clusterApiUrl("devnet"));
 
-
   // Solana Payer's Secret Key 
   // const key = [65,46,236,110,208,109,47,11,84,189,37,203,15,127,180,41,4,132,208,61,118,105,162,92,204,146,200,110,194,135,56,40,81,30,39,173,213,216,117,11,203,45,95,237,49,168,175,13,141,126,97,67,254,42,181,25,133,92,216,56,120,247,175,64] 
   const key = [4,114,247,187,204,2,163,79,77,100,0,136,237,39,172,131,93,144,69,5,114,124,118,127,51,168,206,63,92,3,188,201,31,127,166,167,131,155,105,59,214,22,11,93,115,224,182,190,3,17,177,9,165,86,244,109,134,161,178,38,1,152,228,93]
@@ -50,9 +49,14 @@ async function main() {
   // const mintAddress = "pX36m9jc1BfdxUVgjvk8Rj6Aqqvkdzgj36AkabDDjPS";
   const mintAddress = new PublicKey("BogPYCbnXevkaypTxTznJmGaJ1EdG9Dbf6rQ1h47KjvB");
   // const mintAddress ="GU7eu5XzArRDFJ7WhRnFj1a6TpZ67AYNXMBzamd4hxtY";
-  
-  const inst = await createDeposit( connection, pubKey, lookupProgramId, mintAddress, payer.publicKey, 1)
-  // const inst = await redeem ( connection,pubKey, signature, hashValue, lookupProgramId, mintAddress, payer.publicKey)
+  let inst; 
+  if ( Number(process.argv[2]) ) {
+    inst = await createDeposit( connection, pubKey, lookupProgramId, mintAddress, payer.publicKey, Number(process.argv[2]))
+  } else if ( process.argv[2] === "redeem") {
+    inst = await redeem ( connection,pubKey, signature, hashValue, lookupProgramId, mintAddress, payer.publicKey)
+  } else {
+    throw new Error("Invalid args")
+  }
   
   const block = await connection.getRecentBlockhash("max");
   const transaction = new Transaction({recentBlockhash:block.blockhash})
@@ -131,5 +135,5 @@ async function redeem (
     )
     return [inst]
 }
+
 main()
-// redeem( lookupProgramId, new PublicKey(mintAddress), pk)

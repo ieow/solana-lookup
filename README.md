@@ -10,4 +10,9 @@ solana program deploy ./target/deploy/solsecp.so
 cd scripts
 npm install
 npm run compile
-npm run main
+
+To Deposit 
+npm run main <Number>
+
+To Redeem
+npm run main redeem
