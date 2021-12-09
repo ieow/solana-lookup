@@ -1,18 +1,22 @@
 # solana-lookup-rust
 
-# Deploy Program
+### Deploy Program
+```
 cd program
 cargo build-bpf
 solana program deploy ./target/deploy/solsecp.so
-
-
-# To Interact
+```
+### To Interact
+```
 cd scripts
 npm install
 npm run compile
-
-To Deposit 
+```
+#### To Deposit 
+```
 npm run main <Number>
-
-To Redeem
+```
+#### To Redeem
+```
 npm run main redeem
+```
