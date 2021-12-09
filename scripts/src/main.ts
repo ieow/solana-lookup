@@ -51,8 +51,8 @@ async function main() {
   const mintAddress = new PublicKey("BogPYCbnXevkaypTxTznJmGaJ1EdG9Dbf6rQ1h47KjvB");
   // const mintAddress ="GU7eu5XzArRDFJ7WhRnFj1a6TpZ67AYNXMBzamd4hxtY";
   
-  // const inst = await createDeposit( connection, pubKey, lookupProgramId, mintAddress, payer.publicKey, 1)
-  const inst = await redeem ( pubKey, signature, hashValue, lookupProgramId, mintAddress, payer.publicKey)
+  const inst = await createDeposit( connection, pubKey, lookupProgramId, mintAddress, payer.publicKey, 1)
+  // const inst = await redeem ( connection,pubKey, signature, hashValue, lookupProgramId, mintAddress, payer.publicKey)
   
   const block = await connection.getRecentBlockhash("max");
   const transaction = new Transaction({recentBlockhash:block.blockhash})
@@ -95,6 +95,7 @@ async function createDeposit (
 }
 
 async function redeem (
+  connection: Connection,
   secp256k1PubKey: string,
   signature: EC.Signature,
   hashValue: string, 
@@ -110,7 +111,10 @@ async function redeem (
     console.log("pda", pda.toBase58());
 
     const sourceAccount = await Token.getAssociatedTokenAddress( ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, mintAddress, pda, true);
-    const destinationPDA = await Token.getAssociatedTokenAddress(ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, mintAddress, payerAddress);
+    const sourceAccountInfo = await connection.getAccountInfo(sourceAccount);
+    if (!sourceAccountInfo) throw new Error(`Account do not have ${mintAddress.toBase58()} Token`)
+
+    const destinationAssocAccount = await Token.getAssociatedTokenAddress(ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, mintAddress, payerAddress);
     
     const signature64 = Buffer.concat ( [signature.r.toBuffer(), signature.s.toBuffer()]);
     const payload = { hash : [Buffer.from(hashValue, "hex")] , signature : [signature64], recovery_id : signature.recoveryParam === null ? [Buffer.from([0])] : [Buffer.from([signature.recoveryParam])] }    
@@ -120,7 +124,7 @@ async function redeem (
         lookupProgramId,
         sourceAccount,
         mintAddress,
-        destinationAccount || destinationPDA,
+        destinationAccount || destinationAssocAccount,
         pda,
         payerAddress,
         payload
