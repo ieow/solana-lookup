@@ -3,7 +3,7 @@ use solana_program::{
     entrypoint::ProgramResult,
     msg,
     pubkey::Pubkey,
-    secp256k1_recover::{secp256k1_recover }, 
+    secp256k1_recover::{secp256k1_recover },
     rent::Rent, 
     program_error::ProgramError, 
     program::invoke_signed,

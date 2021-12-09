@@ -15,6 +15,11 @@ let recovery = signature.recoveryParam
 let der = signature.toDER()
 console.log("signature ", recovery, Uint8Array.from(der))
 
+console.log(signature.r.toArray())
+let si = Buffer.from([ ...signature.r.toBuffer() ,...signature.s.toBuffer() ]);
+// console.log(signature.toString())
+console.log(si.length)
 // verification
-let verification = pkey.verify(hashValue, signature)
+// let verification = pkey.verify(hashValue, si  )
+let verification = ec.verify( hashValue, si.toString("hex"), pkey );
 console.log(verification)
