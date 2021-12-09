@@ -45,29 +45,22 @@ export const createLookUpAcc = async(connection:Connection, seeds:(Buffer|Uint8A
     return  undefined 
 }
 
-export const deposit = async (connection: Connection, mintAddress:PublicKey, pda: PublicKey, payer: PublicKey, amount: number) =>{
+export const createDepositInstructions = async (connection: Connection, mintAddress:PublicKey, pda: PublicKey, payerAddress: PublicKey, amount: number) =>{
     const instructions : TransactionInstruction[] = []
     const associatedAddress = await Token.getAssociatedTokenAddress( ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, mintAddress, pda , true);
     const assocAcc = await connection.getParsedAccountInfo(associatedAddress)
     const mintAcc = await connection.getParsedAccountInfo(mintAddress);
     
-    const sourceAddress = await Token.getAssociatedTokenAddress( ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, mintAddress, payer )
-    console.log(associatedAddress.toBase58())
-    console.log(sourceAddress.toBase58())
+    const sourceAddress = await Token.getAssociatedTokenAddress( ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, mintAddress, payerAddress )
+    console.log("payer Source Token Account", sourceAddress.toBase58())
+    console.log("Token Associate Account", associatedAddress.toBase58())
     const decimals = (mintAcc.value?.data as ParsedAccountData ).parsed.info.decimals;
     if (assocAcc.value === null) {
         // create associated token address
-        const initInstruction = Token.createAssociatedTokenAccountInstruction(ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, mintAddress, associatedAddress, pda,  payer)
+        const initInstruction = Token.createAssociatedTokenAccountInstruction(ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, mintAddress, associatedAddress, pda,  payerAddress)
         instructions.push(initInstruction);
     }
-    const transferInst = Token.createTransferCheckedInstruction( TOKEN_PROGRAM_ID, sourceAddress, mintAddress, associatedAddress, payer, [], amount * 10 ** decimals, decimals);
+    const transferInst = Token.createTransferCheckedInstruction( TOKEN_PROGRAM_ID, sourceAddress, mintAddress, associatedAddress, payerAddress, [], amount * 10 ** decimals, decimals);
     instructions.push(transferInst);
     return instructions
-}
-
-
-export const redeem = async ()=> {
-    // create redeem instruction
-    // send instruction
-    return ;
 }

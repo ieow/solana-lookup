@@ -1,10 +1,9 @@
 import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { PublicKey, SYSVAR_RENT_PUBKEY, TransactionInstruction } from '@solana/web3.js';
-import BN = require('bn.js');
 
 export enum Instruction {
   Init,
-  Create,
+  Redeem,
 }
 
 export function createInitInstruction(
@@ -14,9 +13,8 @@ export function createInitInstruction(
   lookupAccountKey: PublicKey,
   seeds: Array<Buffer | Uint8Array>,
 ): TransactionInstruction {
-    const inst_type = Buffer.from(Uint8Array.of(1));
-    const data = Buffer.concat([inst_type, ...seeds])
-    console.log(seeds);
+  const inst_type = Buffer.from(Uint8Array.of(1));
+  const data = Buffer.concat([inst_type, ...seeds])
   const keys = [
     {
       pubkey: systemProgramId,
@@ -39,7 +37,6 @@ export function createInitInstruction(
       isWritable: true,
     },
   ];
-  console.log(data.length)
   return new TransactionInstruction({
     keys,
     programId: lookupProgramId,
@@ -95,7 +92,6 @@ export function createRedeemInstruction(
         isWritable: false,
     }
   ];
-  console.log(data.length)
   return new TransactionInstruction({
     keys,
     programId: lookupProgramId,
