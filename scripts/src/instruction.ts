@@ -1,9 +1,11 @@
 import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
-import { PublicKey, SYSVAR_RENT_PUBKEY, TransactionInstruction } from '@solana/web3.js';
+import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, TransactionInstruction } from '@solana/web3.js';
 
 export enum Instruction {
+  Verify,
   Init,
   Redeem,
+  RedeemSol
 }
 
 export function createInitInstruction(
@@ -13,7 +15,7 @@ export function createInitInstruction(
   lookupAccountKey: PublicKey,
   seeds: Array<Buffer | Uint8Array>,
 ): TransactionInstruction {
-  const inst_type = Buffer.from(Uint8Array.of(1));
+  const inst_type = Buffer.from(Uint8Array.of(Instruction.Init));
   const data = Buffer.concat([inst_type, ...seeds])
   const keys = [
     {
@@ -58,7 +60,7 @@ export function createRedeemInstruction(
     recovery_id: Array<Buffer | Uint8Array>,
   }
 ): TransactionInstruction {
-  const inst_type = Buffer.from(Uint8Array.of(2));
+  const inst_type = Buffer.from(Uint8Array.of(Instruction.Redeem));
   const data = Buffer.concat([inst_type, ...payloadData.hash, ...payloadData.signature, ...payloadData.recovery_id ])
   const keys = [
     {
@@ -99,3 +101,44 @@ export function createRedeemInstruction(
   });
 }
 
+
+export function createRedeemSolInstruction(
+  lookupProgramId : PublicKey,
+  lookupAccountKey: PublicKey,
+  payerKey: PublicKey,
+  payloadData: {
+    hash: Array<Buffer | Uint8Array>,
+    signature: Array<Buffer | Uint8Array>,
+    recovery_id: Array<Buffer | Uint8Array>,
+  }
+): TransactionInstruction {
+  const inst_type = Buffer.from(Uint8Array.of(Instruction.RedeemSol));
+  const data = Buffer.concat([inst_type, ...payloadData.hash, ...payloadData.signature, ...payloadData.recovery_id ])
+  const keys = [
+    {
+      pubkey: SystemProgram.programId,
+      isSigner: false,
+      isWritable: false,
+    },
+    {
+      pubkey: SYSVAR_RENT_PUBKEY,
+      isSigner: false,
+      isWritable: false,
+    },
+    {
+      pubkey: lookupAccountKey,
+      isSigner: false,
+      isWritable: true,
+    },
+    {
+      pubkey: payerKey,
+      isSigner: true,
+      isWritable: true,
+    },
+  ];
+  return new TransactionInstruction({
+    keys,
+    programId: lookupProgramId,
+    data: data, 
+  });
+}

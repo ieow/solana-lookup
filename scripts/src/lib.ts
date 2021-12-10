@@ -1,5 +1,5 @@
 import { ASSOCIATED_TOKEN_PROGRAM_ID, Token, TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { Connection, ParsedAccountData, PublicKey, SystemProgram, Transaction, TransactionInstruction } from "@solana/web3.js"
+import { Connection, ParsedAccountData, PublicKey, SystemProgram, Transaction, TransactionInstruction,  } from "@solana/web3.js"
 import { createInitInstruction } from "./instruction";
 
 // export const createLookUpAcc = async (connection: Connection, seeds:( Buffer| Uint8Array )[], lookUpProgramId: PublicKey, payer: PublicKey) =>{

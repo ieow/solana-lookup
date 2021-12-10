@@ -10,7 +10,7 @@ import {
     TransactionInstruction,
   } from "@solana/web3.js";
   
-import { createInitInstruction, createRedeemInstruction } from "./instruction";
+import { createInitInstruction, createRedeemInstruction, createRedeemSolInstruction } from "./instruction";
 
 
 import { ec as EC } from 'elliptic';
@@ -47,13 +47,17 @@ async function main() {
   // const lookupProgramId = new PublicKey("CPmEJAGR13X19st1LXHMRbUMiMdh3Xpk7JMwdH264ceB");
   const lookupProgramId = new PublicKey("96sDLTjjYx7Xn2wbCzft5UHHp7Z8j37AQ3rWRphfGeY5");
   // const mintAddress = "pX36m9jc1BfdxUVgjvk8Rj6Aqqvkdzgj36AkabDDjPS";
-  const mintAddress = new PublicKey("BogPYCbnXevkaypTxTznJmGaJ1EdG9Dbf6rQ1h47KjvB");
   // const mintAddress ="GU7eu5XzArRDFJ7WhRnFj1a6TpZ67AYNXMBzamd4hxtY";
+
+  // const mintAddress = new PublicKey("BogPYCbnXevkaypTxTznJmGaJ1EdG9Dbf6rQ1h47KjvB");
+  const mintAddress = process.argv[3] ? new PublicKey(process.argv[3]) : undefined ;
+  console.log(mintAddress)
   let inst; 
   if ( Number(process.argv[2]) ) {
-    inst = await createDeposit( connection, pubKey, lookupProgramId, mintAddress, payer.publicKey, Number(process.argv[2]))
+    inst = await createDeposit( connection, pubKey, lookupProgramId, payer.publicKey, Number(process.argv[2]), mintAddress)
   } else if ( process.argv[2] === "redeem") {
-    inst = await redeem ( connection,pubKey, signature, hashValue, lookupProgramId, mintAddress, payer.publicKey)
+    if (!mintAddress) inst = await redeemSol(pubKey, signature, hashValue, lookupProgramId, payer.publicKey); 
+    else inst = await redeem ( connection,pubKey, signature, hashValue, lookupProgramId, mintAddress, payer.publicKey);
   } else {
     throw new Error("Invalid args")
   }
@@ -72,9 +76,9 @@ async function createDeposit (
   connection: Connection, 
   secp256k1PubKey: string , 
   lookupProgramId: PublicKey, 
-  mintAddress: PublicKey,
   payerAddress : PublicKey,
-  amount: number 
+  amount: number, 
+  mintAddress?: PublicKey,
   ){ 
     let secp = Buffer.from(secp256k1PubKey,"hex");
     // remove first byte 0x04
@@ -87,14 +91,25 @@ async function createDeposit (
 
     const instructions :TransactionInstruction[] = []
     let pdaInfo = await connection.getAccountInfo(pda);
+    // Init account 
     if ( pdaInfo === null ) {
         const inst = createInitInstruction(SystemProgram.programId,lookupProgramId, payerAddress, pda, seeds  )
         instructions.push(inst);
     }
 
-    // start deposit
-    const deposit = await createDepositInstructions(connection, new PublicKey(mintAddress), pda, payerAddress, amount);
-    instructions.push(...deposit);
+    // transfer sol or spl-token
+    if (!mintAddress) {
+      const transferInst = SystemProgram.transfer({ 
+        fromPubkey: payerAddress,
+        toPubkey: pda,
+        lamports : amount * LAMPORTS_PER_SOL
+      })
+      instructions.push(transferInst);
+    }else {
+      // start deposit
+      const depositInst = await createDepositInstructions(connection, new PublicKey(mintAddress), pda, payerAddress, amount);
+      instructions.push(...depositInst);
+    }
     return instructions;
 }
 
@@ -136,4 +151,26 @@ async function redeem (
     return [inst]
 }
 
+async function redeemSol (
+  secp256k1PubKey: string,
+  signature: EC.Signature,
+  hashValue: string, 
+  lookupProgramId: PublicKey,
+  payerAddress: PublicKey ,
+) {
+  const secpPubKey = Buffer.from(secp256k1PubKey, "hex").subarray(1);
+
+  const seeds = [secpPubKey.subarray(0,32), secpPubKey.subarray(32,64) ] 
+  const [pda, nounce] = await PublicKey.findProgramAddress( seeds, lookupProgramId ); 
+  console.log("pda", pda.toBase58());
+  const signature64 = Buffer.concat ( [signature.r.toBuffer(), signature.s.toBuffer()]);
+  const payload = { hash : [Buffer.from(hashValue, "hex")] , signature : [signature64], recovery_id : signature.recoveryParam === null ? [Buffer.from([0])] : [Buffer.from([signature.recoveryParam])] }    
+  const inst = createRedeemSolInstruction(
+    lookupProgramId,
+    pda,
+    payerAddress,
+    payload
+  )
+  return [inst]
+}
 main()

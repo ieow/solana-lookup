@@ -7,13 +7,13 @@ use solana_program::{
     rent::Rent, 
     program_error::ProgramError, 
     program::invoke_signed,
-    system_instruction::create_account, sysvar::Sysvar, program_pack::Pack, 
+    system_instruction::{create_account, transfer}, sysvar::Sysvar, program_pack::Pack,
     
 };
 use spl_token::state::Account as TokenAccount;
 use spl_token::state::Mint as MintAccount;
 
-use crate::{instructions::LookUpInstruction, state::VestingScheduleHeader};
+use crate::{instructions::LookUpInstruction, state::LookupData};
 
 pub struct Processor {}
 
@@ -42,6 +42,11 @@ impl Processor {
             } => {
                 msg!("Instruction: Redeem");
                 Self::redeem( program_id, accounts,  &hash, &signature, recovery_id )
+            }
+            LookUpInstruction::RedeemSol{
+                hash,recovery_id,signature
+            } => {
+                Self::redeem_sol(program_id, accounts, &hash, &signature, recovery_id)
             }
         }
     }
@@ -73,7 +78,7 @@ impl Processor {
         seed = vec![s1,s2,&a_bump_seed];
         msg!("{:?}", &lookup_account_key);
 
-        let state_size =  VestingScheduleHeader::LEN;
+        let state_size =  LookupData::LEN;
 
         let init_vesting_account = create_account(
             &payer.key,
@@ -139,7 +144,7 @@ impl Processor {
         let destination_account = next_account_info(accounts_iter)?;
         let lookup_account = next_account_info(accounts_iter)?;
         let payer_account = next_account_info(accounts_iter)?;
-        let token_program_account = next_account_info(accounts_iter)?;
+        // let token_program_account = next_account_info(accounts_iter)?;
         
         let source_token = TokenAccount::unpack(&source_account.try_borrow_data()?)?;
         let mint_token= MintAccount::unpack(&mint_account.try_borrow_data()?)?;
@@ -158,8 +163,8 @@ impl Processor {
         msg!("verification done");
         // transfer token to destination
         let transfer = spl_token::instruction::transfer_checked( 
-            &token_program_account.key, 
-            // &spl_token::id(),
+            // &token_program_account.key, 
+            &spl_token::ID,
             &source_account.key, 
             &mint_account.key, 
             &destination_account.key,
@@ -175,7 +180,7 @@ impl Processor {
                 destination_account.clone(),
                 mint_account.clone(),
                 lookup_account.clone(),
-                token_program_account.clone(),
+                // token_program_account.clone(),
             ],
             &[&seeds]
         )?;        
@@ -198,6 +203,46 @@ impl Processor {
             &[&seeds]
         )?;
         Ok(())
+    }
+
+    pub fn redeem_sol(
+        program_id: &Pubkey,
+        accounts: &[AccountInfo],
+        hash: &[u8],
+        signature: &[u8],
+        recovery_id: u8,
+    ) -> ProgramResult {
+        let pubkey = secp256k1_recover(hash, recovery_id, signature).unwrap();
+        let pubkey_bytes = pubkey.to_bytes();
+        let s1 = pubkey_bytes.get(0..32).unwrap();
+        let s2 = pubkey_bytes.get(32..64).unwrap();
+        
+        // let s1 = signature.get(0..32).unwrap();
+        // let s2 = signature.get(32..64).unwrap();
+        let mut seeds = vec![s1,s2 ];
+
+        let accounts_iter = &mut accounts.iter();
+
+        let system_program_account = next_account_info(accounts_iter)?;
+        let _rent_sysvar_account = next_account_info(accounts_iter)?;
+        let lookup_account = next_account_info(accounts_iter)?;
+        let payer_account = next_account_info(accounts_iter)?;
+        
+        // find pda Account from secp256 pubkey to match lookup_account.key
+        // Find the non reversible public key for the vesting contract via the seed
+        let (lookup_account_key, bump_seed) = Pubkey::try_find_program_address(&seeds, &program_id).unwrap();
+        if lookup_account_key != *lookup_account.key {
+            msg!("verification failed");
+            msg!("Provided lookup account is invalid {:?}", &lookup_account_key );
+            return Err(ProgramError::InvalidArgument);
+        }
+        let b_seed = [bump_seed];
+        seeds.push(&b_seed);
+         
+        msg!("verification done");
+        let lamports = lookup_account.lamports();
+        let transfer_inst = transfer(&lookup_account_key, &payer_account.key, lamports);
+        invoke_signed(&transfer_inst, &[lookup_account.clone(), payer_account.clone()], &[&seeds])
     }
 }
 

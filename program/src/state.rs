@@ -2,15 +2,15 @@ use solana_program::{pubkey::Pubkey, program_pack::{Sealed, Pack}, program_error
 
 
 #[derive(Debug, PartialEq)]
-pub struct VestingScheduleHeader {
+pub struct LookupData {
     pub destination_address: Pubkey,
     pub mint_address: Pubkey,
     pub is_initialized: bool,
 }
 
-impl Sealed for VestingScheduleHeader {}
+impl Sealed for LookupData {}
 
-impl Pack for VestingScheduleHeader {
+impl Pack for LookupData {
     const LEN: usize = 66;
 
     fn pack_into_slice(&self, target: &mut [u8]) {
