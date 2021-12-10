@@ -17,7 +17,7 @@ Create Mint
 spl-token create-token
 `
 
-Create Account
+Create Token Account
 `
 spl-token create-account <MintAddress>
 `
