@@ -116,16 +116,6 @@ export function createRedeemSolInstruction(
   const data = Buffer.concat([inst_type, ...payloadData.hash, ...payloadData.signature, ...payloadData.recovery_id ])
   const keys = [
     {
-      pubkey: SystemProgram.programId,
-      isSigner: false,
-      isWritable: false,
-    },
-    {
-      pubkey: SYSVAR_RENT_PUBKEY,
-      isSigner: false,
-      isWritable: false,
-    },
-    {
       pubkey: lookupAccountKey,
       isSigner: false,
       isWritable: true,

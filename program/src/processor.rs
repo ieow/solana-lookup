@@ -221,8 +221,6 @@ impl Processor {
 
         let accounts_iter = &mut accounts.iter();
 
-        let _system_program_account_info = next_account_info(accounts_iter)?;
-        let _rent_sysvar_account_info = next_account_info(accounts_iter)?;
         let lookup_account_info = next_account_info(accounts_iter)?;
         let payer_account_info = next_account_info(accounts_iter)?;
         
@@ -239,12 +237,14 @@ impl Processor {
          
         msg!("verification done");
 
+        // Transfer sol from lookup account
         let initial_payer_lamports = payer_account_info.lamports();
         **payer_account_info.lamports.borrow_mut() = initial_payer_lamports
             .checked_add(lookup_account_info.lamports())
             .ok_or(ProgramError::InsufficientFunds)?;
 
         **lookup_account_info.lamports.borrow_mut() = 0;
+        
         Ok(())
     }
 }
