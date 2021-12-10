@@ -48,6 +48,7 @@ async function main() {
   console.log("ProgramId" , readProgramId )
   
   
+  
   const mintAddress = process.argv[3] ? new PublicKey(process.argv[3]) : undefined ;
   console.log("mintAddress ", mintAddress?.toBase58())
   let inst; 
@@ -56,6 +57,9 @@ async function main() {
   } else if ( process.argv[2] === "redeem") {
     if (!mintAddress) inst = await redeemSol(pubKey, signature, hashValue, lookupProgramId, payer.publicKey); 
     else inst = await redeem ( connection,pubKey, signature, hashValue, lookupProgramId, mintAddress, payer.publicKey);
+  } else if ( process.argv[2] === "accounts") {
+    await showAccount(connection, pubKey, lookupProgramId);
+    return 
   } else {
     throw new Error("Invalid args")
   }
@@ -68,6 +72,26 @@ async function main() {
   console.log(res)
   return res;
 
+}
+
+async function showAccount ( connection:Connection, secp256k1PubKey : string, lookupProgramId:PublicKey) {
+  let secp = Buffer.from(secp256k1PubKey,"hex");
+    // remove first byte 0x04
+    if (secp.length === 65) secp = secp.subarray(1)
+    const seeds = [secp.subarray(0,32), secp.subarray(32,64)] 
+    console.log("lookup seeds",seeds)
+    // create a PDA (seed = secp256k1)
+    const [pda, nounce]  = await PublicKey.findProgramAddress( seeds, lookupProgramId ); 
+    
+    console.log("Program Derived Account\n",  pda.toBase58() );
+    // await connection.getAccountInfo(pda))
+    
+    console.log("Token Account ")
+    const result = await connection.getTokenAccountsByOwner(pda, { 
+      programId : TOKEN_PROGRAM_ID
+    });
+
+    result.value.forEach( item => console.log( item.pubkey.toBase58() ))
 }
 
 async function createDeposit ( 
@@ -90,10 +114,10 @@ async function createDeposit (
     const instructions :TransactionInstruction[] = []
     let pdaInfo = await connection.getAccountInfo(pda);
     // Init account 
-    if ( pdaInfo === null ) {
-        const inst = createInitInstruction(SystemProgram.programId,lookupProgramId, payerAddress, pda, seeds  )
-        instructions.push(inst);
-    }
+    // if ( pdaInfo === null ) {
+    //     const inst = createInitInstruction(SystemProgram.programId,lookupProgramId, payerAddress, pda, seeds  )
+    //     instructions.push(inst);
+    // }
 
     // transfer sol or spl-token
     if (!mintAddress) {
