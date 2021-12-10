@@ -17,7 +17,7 @@ import { ec as EC } from 'elliptic';
 import hash from 'hash.js';
 import {  createDepositInstructions } from "./lib";
 import { ASSOCIATED_TOKEN_PROGRAM_ID, Token, TOKEN_PROGRAM_ID } from "@solana/spl-token";
-
+import * as fs from "fs";
 const ec = new EC('secp256k1');
 
 
@@ -25,33 +25,31 @@ async function main() {
   const connection = new Connection(clusterApiUrl("devnet"));
 
   // Solana Payer's Secret Key 
-  // const key = [65,46,236,110,208,109,47,11,84,189,37,203,15,127,180,41,4,132,208,61,118,105,162,92,204,146,200,110,194,135,56,40,81,30,39,173,213,216,117,11,203,45,95,237,49,168,175,13,141,126,97,67,254,42,181,25,133,92,216,56,120,247,175,64] 
-  const key = [4,114,247,187,204,2,163,79,77,100,0,136,237,39,172,131,93,144,69,5,114,124,118,127,51,168,206,63,92,3,188,201,31,127,166,167,131,155,105,59,214,22,11,93,115,224,182,190,3,17,177,9,165,86,244,109,134,161,178,38,1,152,228,93]
+  const key = Uint8Array.from(JSON.parse( fs.readFileSync(`./keys/solanaKey.json`) as unknown as string ))
   const payer = Keypair.fromSecretKey(Buffer.from(key));
-  console.log(payer.publicKey.toBase58());
+  console.log("Payer ",payer.publicKey.toBase58());
 
   
   // secp256k1 message
   let hashValue = hash.sha256().update('daddy').digest('hex')
-  console.log(Uint8Array.from(Buffer.from(hashValue, 'hex')))
+  // console.log(Uint8Array.from(Buffer.from(hashValue, 'hex')))
   
   // secp256k1 secret
-  let KEY = '9f26ca20d290adfb31255c82eaafb931e5ccb2d3e0ff7891c0b7c012c97d5cb7'
-  let pkey = ec.keyFromPrivate(KEY, 'hex')
+  const secpSecretKey = JSON.parse( fs.readFileSync(`./keys/secp256k1.json`) as unknown as string );
+  let pkey = ec.keyFromPrivate( secpSecretKey, 'hex')
   let pubKey = pkey.getPublic(false, 'hex')
-  // console.log("secp256k1PubKey", Uint8Array.from(Buffer.from(pubKey, 'hex')))
   console.log("secp256k1PubKey" , pubKey );
   
   let signature = pkey.sign(hashValue)
   
-  // const lookupProgramId = new PublicKey("CPmEJAGR13X19st1LXHMRbUMiMdh3Xpk7JMwdH264ceB");
-  const lookupProgramId = new PublicKey("96sDLTjjYx7Xn2wbCzft5UHHp7Z8j37AQ3rWRphfGeY5");
-  // const mintAddress = "pX36m9jc1BfdxUVgjvk8Rj6Aqqvkdzgj36AkabDDjPS";
-  // const mintAddress ="GU7eu5XzArRDFJ7WhRnFj1a6TpZ67AYNXMBzamd4hxtY";
-
-  // const mintAddress = new PublicKey("BogPYCbnXevkaypTxTznJmGaJ1EdG9Dbf6rQ1h47KjvB");
+  // lookup programId
+  const readProgramId = JSON.parse( fs.readFileSync("./keys/programId.json") as unknown as string) || "96sDLTjjYx7Xn2wbCzft5UHHp7Z8j37AQ3rWRphfGeY5"
+  const lookupProgramId = new PublicKey(readProgramId);
+  console.log("ProgramId" , readProgramId )
+  
+  
   const mintAddress = process.argv[3] ? new PublicKey(process.argv[3]) : undefined ;
-  console.log(mintAddress)
+  console.log("mintAddress ", mintAddress?.toBase58())
   let inst; 
   if ( Number(process.argv[2]) ) {
     inst = await createDeposit( connection, pubKey, lookupProgramId, payer.publicKey, Number(process.argv[2]), mintAddress)

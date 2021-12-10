@@ -27,26 +27,29 @@ Mint token
 spl-token mint <MintAddress> <amount>
 `
 
-update the solana secret key in main.ts. (payer & depositor)
-update wanted secp256k1 key
-update lookupProgramId incase want to use new deployed program
 #### Run compile
 ```
 cd scripts
 npm install
 npm run compile
 ```
+#### Update key
+```
+update the solana secret key in keys/solanaKey.json (payer & depositor, redeemer )
+update wanted secp256k1 key in keys/secp256k1.json
+update lookupProgramId in keys/programId.json
+```
 #### To Deposit
 ```
 // deposit native sol
-npm run main <number>
+npm run main <Amount>
 
 // deposit spl-token
-npm run main <Number> <MintAddress>
+npm run main <Amount> <MintAddress>
 ```
 #### To Redeem
 ```
-// redeem native sol (wip)
+// redeem native sol 
 npm run main redeem
 
 // redeem spl-token
