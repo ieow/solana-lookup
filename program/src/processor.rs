@@ -6,8 +6,8 @@ use solana_program::{
     secp256k1_recover::{secp256k1_recover },
     rent::Rent, 
     program_error::ProgramError, 
-    program::invoke_signed,
-    system_instruction::{create_account, transfer}, sysvar::Sysvar, program_pack::Pack,
+    program::{invoke_signed},
+    system_instruction::{create_account }, sysvar::Sysvar, program_pack::Pack,
     
 };
 use spl_token::state::Account as TokenAccount;
@@ -217,21 +217,19 @@ impl Processor {
         let s1 = pubkey_bytes.get(0..32).unwrap();
         let s2 = pubkey_bytes.get(32..64).unwrap();
         
-        // let s1 = signature.get(0..32).unwrap();
-        // let s2 = signature.get(32..64).unwrap();
         let mut seeds = vec![s1,s2 ];
 
         let accounts_iter = &mut accounts.iter();
 
-        let system_program_account = next_account_info(accounts_iter)?;
-        let _rent_sysvar_account = next_account_info(accounts_iter)?;
-        let lookup_account = next_account_info(accounts_iter)?;
-        let payer_account = next_account_info(accounts_iter)?;
+        let _system_program_account_info = next_account_info(accounts_iter)?;
+        let _rent_sysvar_account_info = next_account_info(accounts_iter)?;
+        let lookup_account_info = next_account_info(accounts_iter)?;
+        let payer_account_info = next_account_info(accounts_iter)?;
         
         // find pda Account from secp256 pubkey to match lookup_account.key
         // Find the non reversible public key for the vesting contract via the seed
         let (lookup_account_key, bump_seed) = Pubkey::try_find_program_address(&seeds, &program_id).unwrap();
-        if lookup_account_key != *lookup_account.key {
+        if lookup_account_key != *lookup_account_info.key {
             msg!("verification failed");
             msg!("Provided lookup account is invalid {:?}", &lookup_account_key );
             return Err(ProgramError::InvalidArgument);
@@ -240,9 +238,14 @@ impl Processor {
         seeds.push(&b_seed);
          
         msg!("verification done");
-        let lamports = lookup_account.lamports();
-        let transfer_inst = transfer(&lookup_account_key, &payer_account.key, lamports);
-        invoke_signed(&transfer_inst, &[lookup_account.clone(), payer_account.clone()], &[&seeds])
+
+        let initial_payer_lamports = payer_account_info.lamports();
+        **payer_account_info.lamports.borrow_mut() = initial_payer_lamports
+            .checked_add(lookup_account_info.lamports())
+            .ok_or(ProgramError::InsufficientFunds)?;
+
+        **lookup_account_info.lamports.borrow_mut() = 0;
+        Ok(())
     }
 }
 
