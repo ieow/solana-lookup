@@ -4,6 +4,7 @@ import { clusterApiUrl, Connection, Keypair, PublicKey, Transaction, Transaction
     import {ec as EC} from 'elliptic';
     import crypto from 'crypto';
 import { createDeposit, redeemSol, redeemSplToken } from "../../../../scripts/src";
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 
 const LookupProgramId = "96sDLTjjYx7Xn2wbCzft5UHHp7Z8j37AQ3rWRphfGeY5";
 
@@ -19,13 +20,31 @@ const solanaKeypair = ref<Keypair>();
 const secp256k1KeyPair = ref<EC.KeyPair> ()
 const connection = new Connection(clusterApiUrl("devnet"));
 
+const programDerivedAddress = ref("")
+const tokens = ref<string[]>([])
   const simpleVerifierMap = () =>{
     let secret = crypto.createHash('sha256').update(`${verifier.value}-${verifierId.value}`).digest('hex');
     secp256k1KeyPair.value = ec.keyFromPrivate(secret);
     return secp256k1KeyPair.value
   }
 
-  const getlookupAccount = () =>{
+  const getlookupAccount = async () =>{
+    let secp = Buffer.from(secp256k1PubKey.value,"hex");
+    // remove first byte 0x04
+    if (secp.length === 65) secp = secp.subarray(1)
+    const seeds = [secp.subarray(0,32), secp.subarray(32,64)] 
+    console.log("lookup seeds",seeds)
+    // create a PDA (seed = secp256k1)
+    const [pda, nounce]  = await PublicKey.findProgramAddress( seeds, new PublicKey(LookupProgramId) ); 
+
+    console.log("Token Account ")
+    const result = await connection.getTokenAccountsByOwner(pda, { 
+      programId : TOKEN_PROGRAM_ID
+    });
+
+    programDerivedAddress.value = pda.toBase58();
+    tokens.value = result.value.map(item=> item.pubkey.toBase58())
+    result.value.forEach( item => console.log( item.pubkey.toBase58() ))
     return 
   } 
 
@@ -34,7 +53,9 @@ const connection = new Connection(clusterApiUrl("devnet"));
     const pk = await kp.getPublic(false,"hex");
     secp256k1PubKey.value = pk
     debugConsole(pk)
+    getlookupAccount()
     return pk
+
   }
     
   const loadSolanaKeypair = async () =>{
@@ -125,18 +146,35 @@ const connection = new Connection(clusterApiUrl("devnet"));
         </div>
         <div v-else>
           <div>
-            <button @click="loadSolanaKeypair">Load Solana Key</button>
+            <div v-if="programDerivedAddress" >
+              <div>Program Derived Address</div>
+              {{ programDerivedAddress }}
+              <div>Token Owned by PDA</div>
+              <div v-for="token in tokens" :key="token" >
+                {{token}}
+              </div>
+            </div>
 
+            <button @click="loadSolanaKeypair">Load Solana Key</button>
+            <div v-if="solanaKeypair">
+              <div>Loaded Solana Public Address</div>
+              {{solanaKeypair.publicKey.toBase58()}}
+              <div>Token owned</div>
+
+            </div>
           </div> 
 
           <div>
-            <input v-model="mintAddress" placeholder="Token Mint Address" />
-            <input v-model="amount" type="number" placeholder="Amount" />
+            <div>
+              <input v-model="mintAddress" placeholder="Token Mint Address" />
+              <input v-model="amount" type="number" placeholder="Amount" />
+            </div>
             <button @click="deposit">Deposit</button>
           </div>
 
-         
-          <input v-model="redeemMintAddress" placeholder="Token Mint Address" />
+          <div>
+            <input v-model="redeemMintAddress" placeholder="Token Mint Address" />
+          </div>
           <button @click="redeem">Redeem</button>
         </div>
     </div>
