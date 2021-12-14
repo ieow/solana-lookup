@@ -1,0 +1,46 @@
+{
+  "name": "vue-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "serve": "vue-cli-service serve",
+    "build": "vue-cli-service build",
+    "lint": "vue-cli-service lint",
+    "install:local": "npm i ../../scripts/*.tgz"
+  },
+  "dependencies": {
+    "@solana/web3.js": "^1.31.0",
+    "@toruslabs/fetch-node-details": "4.0.2",
+    "@toruslabs/solana-embed": "0.0.7",
+    "@toruslabs/torus.js": "4.2.3",
+    "@types/elliptic": "^6.4.14",
+    "bs58": "^4.0.1",
+    "core-js": "^3.8.3",
+    "elliptic": "^6.5.4",
+    "solana-lookup-contract": "file:../../scripts",
+    "tweetnacl": "^1.0.3",
+    "vue": "^3.2.6"
+  },
+  "devDependencies": {
+    "@types/webpack": "^5.28.0",
+    "@typescript-eslint/eslint-plugin": "^4.15.1",
+    "@typescript-eslint/parser": "^4.15.1",
+    "@vue/cli-plugin-babel": "~5.0.0-beta.4",
+    "@vue/cli-plugin-eslint": "~5.0.0-beta.4",
+    "@vue/cli-plugin-typescript": "~5.0.0-beta.4",
+    "@vue/cli-service": "~5.0.0-beta.4",
+    "@vue/compiler-sfc": "^3.2.6",
+    "@vue/eslint-config-typescript": "^7.0.0",
+    "assert": "^2.0.0",
+    "crypto-browserify": "^3.12.0",
+    "eslint": "^7.20.0",
+    "eslint-plugin-vue": "^7.2.0",
+    "https-browserify": "^1.0.0",
+    "os-browserify": "^0.3.0",
+    "process": "^0.11.10",
+    "stream-browserify": "^3.0.0",
+    "stream-http": "^3.2.0",
+    "typescript": "~4.1.5",
+    "webpack": "5.65.0"
+  }
+}
