@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@solana/web3.js": "^1.31.0",
+    "@solana/spl-token": "0.1.8",
     "@toruslabs/fetch-node-details": "4.0.2",
     "@toruslabs/solana-embed": "0.0.7",
     "@toruslabs/torus.js": "4.2.3",
