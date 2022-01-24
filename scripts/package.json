@@ -1,16 +1,16 @@
 {
-  "name": "solana-lookup-sdk",
+  "name": "@cwlee/solana-lookup-sdk",
   "version": "0.0.1",
-  "description": "",
+  "description": "Solana's eth address lookup program",
   "main": "build/index.js",
   "types": "build/index.d.ts",
   "scripts": {
     "compile": "tsc -p ./tsconfig.json",
-    "build" : "rimraf build && npm run compile",
+    "build": "rimraf build && npm run compile",
     "prepack": "npm run build",
     "main": "npm run compile && node build/main.js"
   },
-  "author": "",
+  "author": "cwlee",
   "license": "ISC",
   "devDependencies": {
     "@types/bs58": "^4.0.1",
@@ -30,5 +30,17 @@
     "bn.js": "^5.2.0",
     "elliptic": "^6.5.4",
     "hash": "^0.2.1"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ieow/solana-lookup-rust.git"
+  },
+  "keywords": [
+    "solana",
+    "lookup"
+  ],
+  "bugs": {
+    "url": "https://github.com/ieow/solana-lookup-rust/issues"
+  },
+  "homepage": "https://github.com/ieow/solana-lookup-rust#readme"
 }
