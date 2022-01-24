@@ -1,11 +1,13 @@
 {
-  "name": "solana-lookup-contract",
-  "version": "1.0.0",
+  "name": "solana-lookup-sdk",
+  "version": "0.0.1",
   "description": "",
-  "main": "index.js",
+  "main": "build/index.js",
+  "types": "build/index.d.ts",
   "scripts": {
     "compile": "tsc -p ./tsconfig.json",
-    "setup-validator": "solana-test-validator -r --mint E2F3fsS1HpsLb2VpEgsA5ztfo83CWFWW4jWpC6FvJ6qR --bpf-program 4yBTZXsuz7c1X3PJF4PPCJr8G6HnNAgRvzAWVoFZMncH",
+    "build" : "rimraf build && npm run compile",
+    "prepack": "npm run build",
     "main": "npm run compile && node build/main.js"
   },
   "author": "",
